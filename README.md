@@ -1,53 +1,53 @@
-# Soundboard per Google Meet
+# Soundboard for Google Meet
 
-Effetti sonori udibili dagli altri partecipanti nelle riunioni Google Meet, su macOS. Web app locale senza dipendenze + [BlackHole](https://github.com/ExistentialAudio/BlackHole) come cavo audio virtuale.
+Sound effects that the other participants can hear in your Google Meet calls, on macOS. A dependency-free local web app + [BlackHole](https://github.com/ExistentialAudio/BlackHole) as a virtual audio cable.
 
 ```
 soundboard (http://localhost:8765) ──► BlackHole 2ch ─┐
-                                                      ├─► "Mic + Soundboard" ──► mic di Meet
-microfono fisico ─────────────────────────────────────┘
-        └─ monitor locale via afplay (fuori da Chrome)
+                                                      ├─► "Mic + Soundboard" ──► Meet's microphone
+physical microphone ──────────────────────────────────┘
+        └─ local monitor via afplay (outside Chrome)
 ```
 
-## Installazione
+## Install
 
 ```sh
 ./setup/setup.sh
 ```
 
-Lo script installa il driver BlackHole (brew), crea il dispositivo aggregato "Mic + Soundboard" e collega la skill Claude. Se il driver non risulta caricato ti chiederà di eseguire `sudo killall coreaudiod` e rilanciare.
+The script installs the BlackHole driver (brew), creates the "Mic + Soundboard" aggregate device and links the Claude skill. If the driver is installed but not loaded yet, the script stops and asks you to run `sudo killall coreaudiod`, then run it again.
 
-## Uso
+## Usage
 
 ```sh
-./start.sh   # avvia il server e apre la soundboard in Chrome
-./stop.sh    # spegne tutto a fine giornata
+./start.sh   # starts the local server and opens the soundboard in Chrome
+./stop.sh    # shuts everything down at the end of the day
 ```
 
-In Meet: ⋮ → Impostazioni → Audio → **Microfono → "Mic + Soundboard"**, e cancellazione del rumore spenta (si mangia gli effetti).
+In Meet: ⋮ → Settings → Audio → **Microphone → "Mic + Soundboard"**, and turn noise cancellation off (it eats sound effects).
 
-Nella soundboard: trascina i tuoi mp3/wav sulla pagina (restano salvati nel browser), hotkey `1`–`9` per riprodurre, `Esc` per fermare tutto, "Test uscita" per verificare il collegamento a BlackHole.
+On the board: drag your mp3/wav files onto the page (they persist in the browser), hotkeys `1`–`9` to play, `Esc` to stop everything, "Test output" to verify the BlackHole link.
 
-I suoni non sono inclusi nel repo (`sounds/` è in `.gitignore`): portati i tuoi, o scaricali da [myinstants.com](https://www.myinstants.com) — i link diretti hanno la forma `https://www.myinstants.com/media/sounds/<file>.mp3`.
+Sounds are not included in the repo (`sounds/` is gitignored): bring your own, or grab some from [myinstants.com](https://www.myinstants.com) — direct links look like `https://www.myinstants.com/media/sounds/<file>.mp3`.
 
-Con Claude Code basta dire **"attiva la soundboard"** / **"disattiva la soundboard"**.
+With Claude Code you can just say **"activate the soundboard"** / **"deactivate the soundboard"**.
 
-## Perché è fatta così (vincoli non ovvi)
+## Why it's built this way (non-obvious constraints)
 
-- **La pagina deve girare su localhost**: aperta via `file://`, `setSinkId` (la selezione dell'uscita audio) fallisce silenziosamente e i suoni non raggiungono BlackHole.
-- **Il monitor locale ("Ascolta anche tu") suona fuori da Chrome** (`server.py` → `afplay`): se suonasse nel browser, l'echo cancellation di Chrome lo userebbe come riferimento e cancellerebbe i suoni in Meet.
-- **Nessun processo di mixaggio**: Chrome cattura tutti i canali del dispositivo aggregato (mic sul canale 1, BlackHole sui canali 2-3), quindi voce e suoni arrivano insieme senza passthrough.
+- **The page must be served from localhost**: opened via `file://`, `setSinkId` (audio output selection) fails silently and sounds never reach BlackHole.
+- **The local monitor ("listen too") plays outside Chrome** (`server.py` → `afplay`): if it played inside the browser, Chrome's echo cancellation would use it as a reference signal and cancel the sounds in Meet.
+- **No mixing process needed**: Chrome captures every channel of the aggregate device (mic on channel 1, BlackHole on channels 2-3), so voice and sounds arrive together without a passthrough.
 
-Dettagli operativi e troubleshooting nella skill: [`skills/soundboard/SKILL.md`](skills/soundboard/SKILL.md).
+Operational details and troubleshooting live in the skill: [`skills/soundboard/SKILL.md`](skills/soundboard/SKILL.md).
 
-## Struttura
+## Layout
 
 ```
-soundboard.html            # la web app (vanilla JS, single file, IndexedDB)
-server.py                  # serve la pagina + endpoint /monitor (afplay) e /stop
-start.sh / stop.sh         # avvio e spegnimento
-setup/setup.sh             # installazione one-shot (idempotente)
-setup/create_aggregate.swift  # crea il dispositivo aggregato via CoreAudio
-skills/soundboard/         # skill Claude (symlinkata in ~/.claude/skills)
-sounds/                    # i tuoi mp3 (non versionati)
+soundboard.html            # the web app (vanilla JS, single file, IndexedDB)
+server.py                  # serves the page + /monitor (afplay) and /stop endpoints
+start.sh / stop.sh         # start and stop
+setup/setup.sh             # one-shot install (idempotent)
+setup/create_aggregate.swift  # creates the aggregate device via CoreAudio
+skills/soundboard/         # Claude skill (symlinked into ~/.claude/skills)
+sounds/                    # your mp3s (not versioned)
 ```

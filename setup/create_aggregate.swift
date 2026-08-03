@@ -50,20 +50,20 @@ for id in allDevices() {
     guard let name = stringProp(id, kAudioObjectPropertyName),
           let uid = stringProp(id, kAudioDevicePropertyDeviceUID) else { continue }
     if name == aggregateName || uid == aggregateUID {
-        print("EXISTS: il dispositivo aggregato esiste già (id \(id))")
+        print("EXISTS: aggregate device already present (id \(id))")
         exit(0)
     }
     if name.contains("BlackHole") {
         blackholeUID = uid
     } else if hasInputChannels(id), micUID == nil, !name.contains("Aggregate") {
         micUID = uid
-        print("Microfono trovato: \(name) [\(uid)]")
+        print("Microphone found: \(name) [\(uid)]")
     }
 }
 
-guard let mic = micUID else { print("ERROR: nessun microfono trovato"); exit(1) }
-guard let bh = blackholeUID else { print("ERROR: BlackHole non trovato (driver non caricato?)"); exit(1) }
-print("BlackHole trovato: [\(bh)]")
+guard let mic = micUID else { print("ERROR: no microphone found"); exit(1) }
+guard let bh = blackholeUID else { print("ERROR: BlackHole not found (driver not loaded?)"); exit(1) }
+print("BlackHole found: [\(bh)]")
 
 let description: [String: Any] = [
     kAudioAggregateDeviceNameKey as String: aggregateName,
@@ -79,8 +79,8 @@ let description: [String: Any] = [
 var aggregateID: AudioDeviceID = 0
 let status = AudioHardwareCreateAggregateDevice(description as CFDictionary, &aggregateID)
 if status == noErr {
-    print("OK: creato '\(aggregateName)' (id \(aggregateID))")
+    print("OK: created '\(aggregateName)' (id \(aggregateID))")
 } else {
-    print("ERROR: AudioHardwareCreateAggregateDevice fallita con status \(status)")
+    print("ERROR: AudioHardwareCreateAggregateDevice failed with status \(status)")
     exit(1)
 }

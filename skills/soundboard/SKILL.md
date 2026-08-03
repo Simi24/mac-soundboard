@@ -1,50 +1,50 @@
 ---
 name: soundboard
-description: Soundboard per Google Meet (repo ~/soundboard) — attivazione, spegnimento, installazione e troubleshooting. Trigger — "attiva la soundbar/soundboard", "disattiva/spegni la soundboard", "installa la soundboard", "la soundboard non funziona", "non si sentono i suoni in meet", o qualsiasi richiesta di suoni/effetti sonori durante riunioni Google Meet.
+description: Soundboard for Google Meet (repo ~/soundboard) — activation, shutdown, install and troubleshooting. Triggers — "activate/start the soundboard", "deactivate/stop the soundboard", "install the soundboard", "the soundboard doesn't work", "sounds don't come through in meet", plus the Italian equivalents ("attiva/disattiva la soundbar/soundboard", "la soundboard non funziona", "non si sentono i suoni in meet"), or any request about playing sound effects during Google Meet calls.
 ---
 
-# Soundboard per Google Meet
+# Soundboard for Google Meet
 
-Web app locale + BlackHole per sparare effetti sonori udibili dagli altri partecipanti in Google Meet. Repo: `~/soundboard`.
+Local web app + BlackHole to fire sound effects the other participants can hear in Google Meet. Repo: `~/soundboard`.
 
-## Architettura (non cambiarla senza motivo)
+## Architecture (do not change it without a reason)
 
 ```
 soundboard (http://localhost:8765) ──► BlackHole 2ch ─┐
-                                                      ├─► aggregato "Mic + Soundboard" ──► mic di Meet
-microfono fisico ─────────────────────────────────────┘
-        └─ monitor locale via afplay (server.py /monitor) — FUORI da Chrome
+                                                      ├─► "Mic + Soundboard" aggregate ──► Meet's mic
+physical microphone ──────────────────────────────────┘
+        └─ local monitor via afplay (server.py /monitor) — OUTSIDE Chrome
 ```
 
-Vincoli scoperti a caro prezzo — violarli rompe tutto in modo silenzioso:
+Constraints learned the hard way — violating them breaks things silently:
 
-1. **La pagina DEVE girare su localhost**: via `file://` `setSinkId` fallisce silenziosamente e i suoni finiscono sulle casse invece che in BlackHole.
-2. **Il monitor locale NON deve mai suonare dentro Chrome**: l'echo cancellation di Chrome lo usa come riferimento e cancella i suoni in Meet (sintomo: i suoni passano solo con "Ascolta anche tu" spento). Per questo il monitor passa da `server.py` → `afplay`.
-3. **Niente passthrough sox/mic→BlackHole**: con l'aggregato duplica la voce (metallica). L'aggregato basta: Chrome cattura tutti i suoi canali.
-4. **TCC**: binari nuovi compilati al volo NON hanno il permesso microfono (registrano silenzio a -91 dB); usare sox/ffmpeg che ce l'hanno già.
+1. **The page MUST run on localhost**: via `file://`, `setSinkId` fails silently and sounds end up on the speakers instead of BlackHole.
+2. **The local monitor must NEVER play inside Chrome**: Chrome's echo cancellation uses it as a reference and cancels the sounds in Meet (symptom: sounds only come through with "local monitor" off). That's why the monitor goes through `server.py` → `afplay`.
+3. **No sox/mic→BlackHole passthrough**: with the aggregate device it duplicates the voice (metallic sound). The aggregate is enough: Chrome captures all of its channels.
+4. **TCC**: freshly compiled binaries do NOT have microphone permission (they record digital silence at -91 dB); use sox/ffmpeg which already have it.
 
-## Attivare ("attiva la soundboard")
+## Activate ("activate the soundboard")
 
-1. Esegui `~/soundboard/start.sh` (avvia `server.py` su :8765 se giù e apre Chrome).
-2. Verifica: `curl -sf http://localhost:8765/soundboard.html` → 200; `system_profiler SPAudioDataType | grep "Mic + Soundboard"` → esiste.
-3. Ricorda all'utente (solo il primo avvio della giornata): in Meet ⋮ → Impostazioni → Audio → **Microfono = "Mic + Soundboard"** e cancellazione del rumore spenta; nella pagina il pallino deve dire "BlackHole collegato".
+1. Run `~/soundboard/start.sh` (starts `server.py` on :8765 if down and opens Chrome).
+2. Verify: `curl -sf http://localhost:8765/soundboard.html` → 200; `system_profiler SPAudioDataType | grep "Mic + Soundboard"` → exists.
+3. Remind the user (first launch of the day only): in Meet ⋮ → Settings → Audio → **Microphone = "Mic + Soundboard"** and noise cancellation off; on the page the status LED must read "BlackHole connected".
 
-## Disattivare ("disattiva la soundboard")
+## Deactivate ("deactivate the soundboard")
 
-Esegui `~/soundboard/stop.sh` (spegne server e monitor). Il dispositivo aggregato e il driver restano: sono passivi, non serve toccarli. L'utente deve solo rimettere il microfono normale in Meet se glielo chiede.
+Run `~/soundboard/stop.sh` (kills server and monitor). The aggregate device and the driver stay: they are passive, no need to touch them. The user only needs to switch back to the normal microphone in Meet if they ask.
 
-## Installare su un Mac nuovo
+## Install on a new Mac
 
-Esegui `~/soundboard/setup/setup.sh`: installa il cask `blackhole-2ch`, crea l'aggregato via `setup/create_aggregate.swift`, collega questa skill. Se il driver non è caricato, lo script si ferma e chiede all'utente di eseguire `sudo killall coreaudiod` (serve la sua password; `launchctl kickstart` è bloccato da SIP) e rilanciare.
+Run `~/soundboard/setup/setup.sh`: installs the `blackhole-2ch` cask, creates the aggregate via `setup/create_aggregate.swift`, links this skill. If the driver isn't loaded, the script stops and asks the user to run `sudo killall coreaudiod` (needs their password; `launchctl kickstart` is blocked by SIP) and re-run.
 
 ## Troubleshooting
 
-- **"Non si sente in Meet"** — in ordine di probabilità:
-  1. Monitor che suona dentro Chrome (vincolo 2) — verificare che la pagina sia la versione con `/monitor`.
-  2. Pagina aperta via `file://` (vincolo 1) — l'URL deve essere `http://localhost:8765/...`.
-  3. Microfono sbagliato in Meet (deve essere "Mic + Soundboard").
-  4. Uscita sbagliata nella soundboard (deve essere "BlackHole 2ch" o "Mic + Soundboard", equivalenti).
-- **Misurare dove si interrompe la catena**: registrare BlackHole con `ffmpeg -f avfoundation -i ":BlackHole 2ch" -t 10 out.wav` mentre l'utente preme un pad, poi `ffmpeg -i out.wav -af volumedetect -f null -` → -91 dB = non arriva niente; per l'aggregato usare `-i ":Mic + Soundboard"` e `astats` per i livelli per-canale (ch1 = mic, ch2-3 = BlackHole).
-- **BlackHole sparito dopo un update di macOS**: `ls /Library/Audio/Plug-Ins/HAL/` e se il driver c'è, far eseguire `sudo killall coreaudiod`.
-- **Aggregato sparito**: rilanciare `swift ~/soundboard/setup/create_aggregate.swift`.
-- **Aggiungere suoni**: trascinarli sulla pagina (persistono in IndexedDB); mp3 di backup in `~/soundboard/sounds/`, scaricabili da myinstants.com (link diretti `https://www.myinstants.com/media/sounds/<file>.mp3`).
+- **"No sound in Meet"** — in order of likelihood:
+  1. Monitor playing inside Chrome (constraint 2) — check the page is the version using `/monitor`.
+  2. Page opened via `file://` (constraint 1) — the URL must be `http://localhost:8765/...`.
+  3. Wrong microphone in Meet (must be "Mic + Soundboard").
+  4. Wrong output on the board (must be "BlackHole 2ch" or "Mic + Soundboard", equivalent).
+- **Measuring where the chain breaks**: record BlackHole with `ffmpeg -f avfoundation -i ":BlackHole 2ch" -t 10 out.wav` while the user presses a pad, then `ffmpeg -i out.wav -af volumedetect -f null -` → -91 dB = nothing is arriving; for the aggregate use `-i ":Mic + Soundboard"` and `astats` for per-channel levels (ch1 = mic, ch2-3 = BlackHole).
+- **BlackHole gone after a macOS update**: `ls /Library/Audio/Plug-Ins/HAL/` and if the driver is there, have the user run `sudo killall coreaudiod`.
+- **Aggregate device gone**: re-run `swift ~/soundboard/setup/create_aggregate.swift`.
+- **Adding sounds**: drag them onto the page (they persist in IndexedDB); backup mp3s in `~/soundboard/sounds/`, downloadable from myinstants.com (direct links: `https://www.myinstants.com/media/sounds/<file>.mp3`).

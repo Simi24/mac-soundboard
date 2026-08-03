@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Server della soundboard: file statici + monitor locale fuori da Chrome.
+"""Soundboard server: static files + local monitor outside Chrome.
 
-Il monitor deve suonare FUORI da Chrome: l'echo cancellation di Chrome usa
-l'audio riprodotto dal browser come riferimento e cancellerebbe in Meet
-gli stessi suoni in arrivo da BlackHole.
+The monitor MUST play OUTSIDE Chrome: Chrome's echo cancellation uses the
+audio played by the browser as a reference signal and would cancel the very
+same sounds arriving in Meet through BlackHole.
 """
 import glob
 import os

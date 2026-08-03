@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -371,26 +371,26 @@
     <span class="mk">MK-I</span>
     <div class="status" id="status">
       <span class="dot" id="statusDot"></span>
-      <span id="statusText">Inizializzazione…</span>
+      <span id="statusText">Initializing…</span>
     </div>
   </div>
 
   <div class="banner" id="permBanner">
-    <span>Per selezionare BlackHole come uscita serve un permesso una-tantum.</span>
-    <button id="permBtn">Abilita</button>
+    <span>A one-time permission is required to select BlackHole as output.</span>
+    <button id="permBtn">Enable</button>
   </div>
 
   <div class="console">
     <div class="control-group">
-      <label for="outputSelect">Uscita riunione</label>
+      <label for="outputSelect">Meeting output</label>
       <select id="outputSelect"></select>
     </div>
     <div class="control-group">
-      <label for="meetVolume">Vol. riunione</label>
+      <label for="meetVolume">Meeting vol.</label>
       <input type="range" id="meetVolume" min="0" max="1" step="0.05" value="0.8">
     </div>
     <div class="control-group">
-      <label for="monitorToggle">Monitor locale</label>
+      <label for="monitorToggle">Local monitor</label>
       <div class="row">
         <input type="checkbox" id="monitorToggle" checked>
         <input type="range" id="monitorVolume" min="0" max="1" step="0.05" value="0.5">
@@ -398,7 +398,7 @@
     </div>
     <div class="control-group">
       <label>&nbsp;</label>
-      <button id="testOutput">Test uscita</button>
+      <button id="testOutput">Test output</button>
     </div>
     <button class="stop-all" id="stopAll">■ STOP</button>
   </div>
@@ -406,22 +406,22 @@
   <div class="grid" id="grid"></div>
 
   <p class="hint">
-    Trascina file audio (mp3/wav/ogg) ovunque sulla pagina per aggiungerli.
-    <kbd>1</kbd>–<kbd>9</kbd> riproduce · <kbd>Esc</kbd> ferma tutto · clic sul nome per rinominare.
-    I suoni restano salvati nel browser.
+    Drag audio files (mp3/wav/ogg) anywhere on the page to add them.
+    <kbd>1</kbd>–<kbd>9</kbd> plays · <kbd>Esc</kbd> stops everything · click a name to rename.
+    Sounds are saved in the browser.
   </p>
 </div>
 
-<div class="drop-overlay" id="dropOverlay">Rilascia i file audio</div>
+<div class="drop-overlay" id="dropOverlay">Drop audio files</div>
 <input type="file" id="filePicker" accept="audio/*" multiple hidden>
 
 <script>
 'use strict';
 
-// ---------- Stato ----------
+// ---------- State ----------
 let db = null;
 let pads = [];               // {id, name, order, type, buffer}
-let outputDeviceId = '';     // sinkId per la riunione (BlackHole)
+let outputDeviceId = '';     // sinkId for the meeting output (BlackHole)
 const activeAudios = new Set();
 
 const LED_COLORS = ['#3ec7ff', '#ff9f0a', '#34e07a', '#ff375f', '#bf5af2', '#ffd60a', '#64d2ff', '#ff6482', '#5ee6a8'];
@@ -462,7 +462,7 @@ function idbDelete(id) {
   });
 }
 
-// ---------- Dispositivi audio ----------
+// ---------- Audio devices ----------
 async function refreshOutputs() {
   const devices = await navigator.mediaDevices.enumerateDevices();
   const outputs = devices.filter((d) => d.kind === 'audiooutput');
@@ -473,7 +473,7 @@ async function refreshOutputs() {
   for (const d of outputs) {
     const opt = document.createElement('option');
     opt.value = d.deviceId;
-    opt.textContent = d.label || `Uscita ${select.length + 1}`;
+    opt.textContent = d.label || `Output ${select.length + 1}`;
     select.appendChild(opt);
   }
 
@@ -481,12 +481,12 @@ async function refreshOutputs() {
   if (blackhole) {
     outputDeviceId = blackhole.deviceId;
     select.value = blackhole.deviceId;
-    setStatus(true, 'BlackHole collegato');
+    setStatus(true, 'BlackHole connected');
   } else if (hasLabels) {
     outputDeviceId = select.value || '';
-    setStatus(false, 'BlackHole non trovato: i suoni non arriveranno in riunione');
+    setStatus(false, 'BlackHole not found: sounds will NOT reach the meeting');
   } else {
-    setStatus(false, 'Permesso audio mancante');
+    setStatus(false, 'Audio permission missing');
     $('permBanner').classList.add('visible');
   }
   return hasLabels;
@@ -504,11 +504,11 @@ async function requestPermission() {
     $('permBanner').classList.remove('visible');
     await refreshOutputs();
   } catch {
-    setStatus(false, 'Permesso negato: consenti il microfono per questa pagina');
+    setStatus(false, 'Permission denied: allow microphone access for this page');
   }
 }
 
-// ---------- Riproduzione ----------
+// ---------- Playback ----------
 async function playPad(pad, padEl) {
   const blob = new Blob([pad.buffer], { type: pad.type || 'audio/mpeg' });
   const url = URL.createObjectURL(blob);
@@ -519,15 +519,15 @@ async function playPad(pad, padEl) {
     try {
       await meet.setSinkId(outputDeviceId);
     } catch (err) {
-      console.error('setSinkId fallita:', err.name, err.message);
-      setStatus(false, `Uscita non instradabile (${err.name}): il suono NON arriva in riunione`);
+      console.error('setSinkId failed:', err.name, err.message);
+      setStatus(false, `Output not routable (${err.name}): the sound will NOT reach the meeting`);
     }
   } else if (!outputDeviceId) {
-    setStatus(false, 'Nessuna uscita selezionata: il suono NON arriva in riunione');
+    setStatus(false, 'No output selected: the sound will NOT reach the meeting');
   }
 
-  // Il monitor locale suona FUORI da Chrome (via server → afplay): se suonasse
-  // nel browser, l'echo cancellation di Chrome cancellerebbe il suono in Meet.
+  // The local monitor plays OUTSIDE Chrome (via server → afplay): if it played
+  // in the browser, Chrome's echo cancellation would cancel the sound in Meet.
   if ($('monitorToggle').checked) {
     fetch(`/monitor?vol=${$('monitorVolume').value}`, {
       method: 'POST',
@@ -574,7 +574,7 @@ function beepBlob() {
 
 async function testOutput() {
   if (!outputDeviceId) {
-    setStatus(false, 'Nessuna uscita selezionata: abilita il permesso audio');
+    setStatus(false, 'No output selected: enable the audio permission first');
     return;
   }
   const url = URL.createObjectURL(beepBlob());
@@ -583,10 +583,10 @@ async function testOutput() {
   try {
     await audio.setSinkId(outputDeviceId);
     await audio.play();
-    setStatus(true, 'Beep di test inviato all\'uscita selezionata');
+    setStatus(true, 'Test beep sent to the selected output');
   } catch (err) {
-    console.error('Test uscita fallito:', err.name, err.message);
-    setStatus(false, `Test fallito (${err.name}): l'audio non raggiunge l'uscita`);
+    console.error('Output test failed:', err.name, err.message);
+    setStatus(false, `Test failed (${err.name}): audio is not reaching the output`);
   }
 }
 
@@ -653,7 +653,7 @@ function render() {
     el.innerHTML = `
       <span class="key">${i < 9 ? i + 1 : '·'}</span>
       <span class="name"></span>
-      <button class="delete" title="Elimina">✕</button>
+      <button class="delete" title="Delete">✕</button>
       <div class="progress"></div>
     `;
     const nameEl = el.querySelector('.name');
@@ -670,12 +670,12 @@ function render() {
 
   const add = document.createElement('div');
   add.className = 'pad add';
-  add.innerHTML = '<span class="plus">+</span><span>Aggiungi</span>';
+  add.innerHTML = '<span class="plus">+</span><span>Add sound</span>';
   add.addEventListener('click', () => $('filePicker').click());
   grid.appendChild(add);
 }
 
-// ---------- Eventi globali ----------
+// ---------- Global events ----------
 document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
   if (e.key === 'Escape' || e.key === '0') { stopAll(); return; }
