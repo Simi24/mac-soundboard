@@ -1,17 +1,17 @@
 ---
 name: soundboard
-description: Soundboard for Google Meet (repo ~/soundboard) — activation, shutdown, install and troubleshooting. Triggers — "activate/start the soundboard", "deactivate/stop the soundboard", "install the soundboard", "the soundboard doesn't work", "sounds don't come through in meet", plus the Italian equivalents ("attiva/disattiva la soundbar/soundboard", "la soundboard non funziona", "non si sentono i suoni in meet"), or any request about playing sound effects during Google Meet calls.
+description: Soundboard for video calls (repo ~/soundboard) — activation, shutdown, install and troubleshooting. Works with any app that asks for a microphone (Meet, Zoom, Discord, Teams…). Triggers — "activate/start the soundboard", "deactivate/stop the soundboard", "install the soundboard", "the soundboard doesn't work", "sounds don't come through in meet/zoom/discord", plus the Italian equivalents ("attiva/disattiva la soundbar/soundboard", "la soundboard non funziona", "non si sentono i suoni in call"), or any request about playing sound effects during video calls.
 ---
 
-# Soundboard for Google Meet
+# Soundboard for video calls
 
-Local web app + BlackHole to fire sound effects the other participants can hear in Google Meet. Repo: `~/soundboard`.
+Local web app + BlackHole to fire sound effects the other participants can hear in any call app that asks for a microphone (Meet, Zoom, Discord, Teams, OBS…). Repo: `~/soundboard`.
 
 ## Architecture (do not change it without a reason)
 
 ```
 soundboard (http://localhost:8765) ──► BlackHole 2ch ─┐
-                                                      ├─► "Mic + Soundboard" aggregate ──► Meet's mic
+                                                      ├─► "Mic + Soundboard" aggregate ──► the app's mic
 physical microphone ──────────────────────────────────┘
         └─ local monitor via afplay (server.py /monitor) — OUTSIDE Chrome
 ```
@@ -19,7 +19,7 @@ physical microphone ────────────────────
 Constraints learned the hard way — violating them breaks things silently:
 
 1. **The page MUST run on localhost**: via `file://`, `setSinkId` fails silently and sounds end up on the speakers instead of BlackHole.
-2. **The local monitor must NEVER play inside Chrome**: Chrome's echo cancellation uses it as a reference and cancels the sounds in Meet (symptom: sounds only come through with "local monitor" off). That's why the monitor goes through `server.py` → `afplay`.
+2. **The local monitor must NEVER play inside Chrome**: Chrome's echo cancellation uses it as a reference and cancels the sounds in any call running in Chrome, e.g. Meet (symptom: sounds only come through with "local monitor" off). That's why the monitor goes through `server.py` → `afplay`.
 3. **No sox/mic→BlackHole passthrough**: with the aggregate device it duplicates the voice (metallic sound). The aggregate is enough: Chrome captures all of its channels.
 4. **TCC**: freshly compiled binaries do NOT have microphone permission (they record digital silence at -91 dB); use sox/ffmpeg which already have it.
 
@@ -27,11 +27,11 @@ Constraints learned the hard way — violating them breaks things silently:
 
 1. Run `~/soundboard/start.sh` (starts `server.py` on :8765 if down and opens Chrome).
 2. Verify: `curl -sf http://localhost:8765/soundboard.html` → 200; `system_profiler SPAudioDataType | grep "Mic + Soundboard"` → exists.
-3. Remind the user (first launch of the day only): in Meet ⋮ → Settings → Audio → **Microphone = "Mic + Soundboard"** and noise cancellation off; on the page the status LED must read "BlackHole connected".
+3. Remind the user (first launch of the day only): select **"Mic + Soundboard"** as microphone in their call app and disable its noise/voice filter (Meet: noise cancellation; Zoom: enable "Original sound for musicians"; Discord: Krisp/noise suppression off; Teams: noise suppression off). On the page the status LED must read "BlackHole connected". Apps without a mic picker use the system default input (System Settings → Sound → Input).
 
 ## Deactivate ("deactivate the soundboard")
 
-Run `~/soundboard/stop.sh` (kills server and monitor). The aggregate device and the driver stay: they are passive, no need to touch them. The user only needs to switch back to the normal microphone in Meet if they ask.
+Run `~/soundboard/stop.sh` (kills server and monitor). The aggregate device and the driver stay: they are passive, no need to touch them. The user only needs to switch back to the normal microphone in their call app if they ask.
 
 ## Install on a new Mac
 
@@ -39,11 +39,12 @@ Run `~/soundboard/setup/setup.sh`: installs the `blackhole-2ch` cask, creates th
 
 ## Troubleshooting
 
-- **"No sound in Meet"** — in order of likelihood:
-  1. Monitor playing inside Chrome (constraint 2) — check the page is the version using `/monitor`.
-  2. Page opened via `file://` (constraint 1) — the URL must be `http://localhost:8765/...`.
-  3. Wrong microphone in Meet (must be "Mic + Soundboard").
-  4. Wrong output on the board (must be "BlackHole 2ch" or "Mic + Soundboard", equivalent).
+- **"No sound in the call"** — in order of likelihood:
+  1. The app's noise/voice filter is eating the effects (see the per-app list in the Activate section).
+  2. Monitor playing inside Chrome (constraint 2, for calls running in Chrome) — check the page is the version using `/monitor`.
+  3. Page opened via `file://` (constraint 1) — the URL must be `http://localhost:8765/...`.
+  4. Wrong microphone in the call app (must be "Mic + Soundboard").
+  5. Wrong output on the board (must be "BlackHole 2ch" or "Mic + Soundboard", equivalent).
 - **Measuring where the chain breaks**: record BlackHole with `ffmpeg -f avfoundation -i ":BlackHole 2ch" -t 10 out.wav` while the user presses a pad, then `ffmpeg -i out.wav -af volumedetect -f null -` → -91 dB = nothing is arriving; for the aggregate use `-i ":Mic + Soundboard"` and `astats` for per-channel levels (ch1 = mic, ch2-3 = BlackHole).
 - **BlackHole gone after a macOS update**: `ls /Library/Audio/Plug-Ins/HAL/` and if the driver is there, have the user run `sudo killall coreaudiod`.
 - **Aggregate device gone**: re-run `swift ~/soundboard/setup/create_aggregate.swift`.

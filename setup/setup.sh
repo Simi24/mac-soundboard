@@ -34,4 +34,4 @@ fi
 
 echo ""
 echo "Setup complete. Start with: $DIR/start.sh"
-echo "In Meet: Settings → Audio → Microphone → 'Mic + Soundboard'."
+echo "Select 'Mic + Soundboard' as microphone in your call app."

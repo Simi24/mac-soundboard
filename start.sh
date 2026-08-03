@@ -10,5 +10,5 @@ fi
 
 sleep 0.5
 open -a "Google Chrome" "http://localhost:$PORT/soundboard.html"
-echo "Soundboard up. In Meet: Settings → Audio → Microphone → 'Mic + Soundboard'."
+echo "Soundboard up. Select 'Mic + Soundboard' as microphone in your call app."
 echo "To shut down: $DIR/stop.sh"
