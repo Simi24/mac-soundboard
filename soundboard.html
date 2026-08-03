@@ -3,212 +3,330 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Soundboard</title>
+<title>SOUNDBOARD MK-I</title>
 <style>
   :root {
-    --bg: #f8fafc;
-    --surface: #ffffff;
-    --border: #e2e8f0;
-    --text: #0f172a;
-    --text-muted: #64748b;
-    --accent: #2563eb;
-    --accent-soft: #dbeafe;
-    --danger: #dc2626;
-    --ok: #16a34a;
-    --warn: #d97706;
-    --shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0f172a;
-      --surface: #1e293b;
-      --border: #334155;
-      --text: #f1f5f9;
-      --text-muted: #94a3b8;
-      --accent: #3b82f6;
-      --accent-soft: #1e3a5f;
-      --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-    }
+    --room: #0a0b0e;
+    --chassis-hi: #34373f;
+    --chassis-lo: #191b20;
+    --panel: #0d0e12;
+    --pad-hi: #27292f;
+    --pad-lo: #1a1c21;
+    --edge: #000;
+    --text: #e9eaee;
+    --muted: #8b8f9a;
+    --ok: #34e07a;
+    --warn: #ffb020;
+    --red: #ff3b30;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: var(--bg);
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #16181d 0%, var(--room) 60%);
     color: var(--text);
     min-height: 100vh;
-    padding: 24px;
+    padding: 40px 16px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
   }
-  header {
+
+  /* ---------- Chassis ---------- */
+  .chassis {
+    position: relative;
+    width: 100%;
+    max-width: 960px;
+    border-radius: 24px;
+    padding: 28px 28px 20px;
+    background: linear-gradient(165deg, var(--chassis-hi) 0%, var(--chassis-lo) 55%, #131519 100%);
+    border: 1px solid #06070a;
+    box-shadow:
+      0 30px 60px rgba(0, 0, 0, 0.65),
+      inset 0 1px 0 rgba(255, 255, 255, 0.09),
+      inset 0 -2px 6px rgba(0, 0, 0, 0.5);
+  }
+  .screw {
+    position: absolute;
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #5c616c, #23252b 70%);
+    box-shadow: inset 0 -1px 2px rgba(0,0,0,.8), 0 1px 0 rgba(255,255,255,.07);
+  }
+  .screw::after {
+    content: '';
+    position: absolute;
+    left: 2px; right: 2px; top: 5.5px;
+    height: 1.5px;
+    background: #0c0d10;
+    transform: rotate(38deg);
+  }
+  .screw.tl { top: 10px; left: 10px; }
+  .screw.tr { top: 10px; right: 10px; transform: rotate(70deg); }
+  .screw.bl { bottom: 10px; left: 10px; transform: rotate(115deg); }
+  .screw.br { bottom: 10px; right: 10px; transform: rotate(20deg); }
+
+  /* ---------- Top panel ---------- */
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding: 0 4px;
+  }
+  .brand h1 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 6px;
+  }
+  .brand .mk {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+  }
+  .brand .status {
+    margin-left: auto;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-bottom: 20px;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
   }
-  h1 { font-size: 20px; font-weight: 600; }
-  .controls {
+  .dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--warn);
+    box-shadow: 0 0 8px var(--warn), inset 0 -1px 1px rgba(0,0,0,.4);
+    flex-shrink: 0;
+  }
+  .dot.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok), inset 0 -1px 1px rgba(0,0,0,.4); }
+
+  .console {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 20px;
     flex-wrap: wrap;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 14px;
-    box-shadow: var(--shadow);
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 22px;
+    border: 1px solid #06070a;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 255, 255, 0.05);
   }
-  .control-group { display: flex; align-items: center; gap: 8px; }
-  .control-group label { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
-  select, input[type="range"] { accent-color: var(--accent); }
+  .control-group { display: flex; flex-direction: column; gap: 6px; }
+  .control-group label {
+    font-family: var(--mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+  }
+  .row { display: flex; align-items: center; gap: 8px; }
+
   select {
-    background: var(--bg);
+    font-family: var(--mono);
+    font-size: 12px;
+    background: #16181d;
     color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 5px 8px;
-    font-size: 13px;
-    max-width: 220px;
+    border: 1px solid #2c2f37;
+    border-radius: 7px;
+    padding: 6px 8px;
+    max-width: 210px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.5);
   }
-  input[type="range"] { width: 90px; }
-  .status {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: var(--text-muted);
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 110px;
+    height: 22px;
+    background: transparent;
   }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); flex-shrink: 0; }
-  .dot.ok { background: var(--ok); }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 5px;
+    border-radius: 3px;
+    background: #08090b;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.9), 0 1px 0 rgba(255,255,255,.05);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    margin-top: -8px;
+    width: 14px; height: 21px;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #565b66 0%, #2b2e35 50%, #40444d 100%);
+    border: 1px solid #0a0b0d;
+    box-shadow: 0 2px 4px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.15);
+  }
+  input[type="checkbox"] { accent-color: var(--ok); width: 15px; height: 15px; }
+
   button {
-    font-family: inherit;
-    font-size: 13px;
-    border: 1px solid var(--border);
-    background: var(--surface);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
     color: var(--text);
-    border-radius: 6px;
-    padding: 6px 12px;
+    background: linear-gradient(180deg, #33363e, #22242a);
+    border: 1px solid #0a0b0d;
+    border-radius: 8px;
+    padding: 8px 14px;
     cursor: pointer;
-    transition: background 0.15s;
+    box-shadow: 0 3px 0 #0d0e11, inset 0 1px 0 rgba(255,255,255,.1);
+    transition: filter 0.12s;
   }
-  button:hover { background: var(--accent-soft); border-color: var(--accent); }
-  button.stop-all { border-color: var(--danger); color: var(--danger); }
-  button.stop-all:hover { background: var(--danger); color: #fff; }
+  button:hover { filter: brightness(1.2); }
+  button:active { transform: translateY(2px); box-shadow: 0 1px 0 #0d0e11, inset 0 1px 0 rgba(255,255,255,.1); }
+
+  .stop-all {
+    margin-left: auto;
+    color: #fff;
+    font-weight: 700;
+    background: radial-gradient(circle at 50% 25%, #ff5b52, #b3140c 80%);
+    border-color: #4d0400;
+    box-shadow: 0 3px 0 #570803, 0 0 14px rgba(255, 59, 48, 0.35), inset 0 1px 0 rgba(255,255,255,.25);
+    padding: 10px 18px;
+  }
+  .stop-all:active { box-shadow: 0 1px 0 #570803, 0 0 8px rgba(255,59,48,.3), inset 0 1px 0 rgba(255,255,255,.25); }
+
+  /* ---------- Pads ---------- */
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+    gap: 14px;
   }
   .pad {
+    --led: #3ec7ff;
     position: relative;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px;
-    min-height: 96px;
+    aspect-ratio: 1;
+    border-radius: 16px;
+    background: linear-gradient(170deg, var(--pad-hi), var(--pad-lo) 70%);
+    border: 1px solid var(--edge);
+    box-shadow:
+      0 6px 0 #0a0b0d,
+      0 10px 16px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
     cursor: pointer;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 8px;
-    box-shadow: var(--shadow);
-    transition: border-color 0.15s, transform 0.05s;
+    padding: 10px;
     overflow: hidden;
     user-select: none;
+    transition: box-shadow 0.15s;
   }
-  .pad:hover { border-color: var(--accent); }
-  .pad:active { transform: scale(0.98); }
-  .pad.playing { border-color: var(--accent); background: var(--accent-soft); }
+  .pad::after {
+    content: '';
+    position: absolute;
+    left: 12px; right: 12px; bottom: 6px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--led);
+    opacity: 0.35;
+    box-shadow: 0 0 6px var(--led);
+  }
+  .pad:hover { box-shadow: 0 6px 0 #0a0b0d, 0 10px 16px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08), 0 0 12px color-mix(in srgb, var(--led) 40%, transparent); }
+  .pad:active, .pad.playing {
+    transform: translateY(4px);
+    box-shadow:
+      0 2px 0 #0a0b0d,
+      0 4px 8px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 0 22px color-mix(in srgb, var(--led) 65%, transparent);
+  }
+  .pad.playing::after { opacity: 1; box-shadow: 0 0 12px var(--led); }
   .pad .key {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px; height: 22px;
-    font-size: 12px;
-    font-weight: 600;
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    color: var(--text-muted);
-    background: var(--bg);
+    align-self: flex-start;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    background: #0c0d10;
+    border: 1px solid #34373f;
+    border-bottom-width: 3px;
+    border-radius: 6px;
+    padding: 2px 7px;
   }
   .pad .name {
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.25;
     word-break: break-word;
-    line-height: 1.3;
+    margin-bottom: 6px;
+    text-shadow: 0 1px 2px rgba(0,0,0,.8);
   }
   .pad .name input {
     width: 100%;
     font: inherit;
     color: inherit;
-    background: var(--bg);
-    border: 1px solid var(--accent);
-    border-radius: 4px;
-    padding: 2px 4px;
+    background: #0c0d10;
+    border: 1px solid var(--led);
+    border-radius: 5px;
+    padding: 2px 5px;
   }
   .pad .delete {
     position: absolute;
     top: 8px; right: 8px;
-    width: 22px; height: 22px;
-    padding: 0;
-    font-size: 14px;
-    line-height: 1;
-    color: var(--text-muted);
-    border: none;
+    padding: 2px 7px;
+    font-size: 12px;
     background: transparent;
+    border: none;
+    box-shadow: none;
+    color: var(--muted);
     opacity: 0;
     transition: opacity 0.15s;
   }
   .pad:hover .delete { opacity: 1; }
-  .pad .delete:hover { color: var(--danger); background: transparent; }
+  .pad .delete:hover { color: var(--red); filter: none; }
+  .pad .delete:active { transform: none; }
   .pad .progress {
     position: absolute;
     bottom: 0; left: 0;
     height: 3px;
-    background: var(--accent);
+    background: var(--led);
+    box-shadow: 0 0 8px var(--led);
     width: 0%;
   }
   .pad.add {
-    border-style: dashed;
+    background: transparent;
+    border: 2px dashed #2e3138;
+    box-shadow: none;
     align-items: center;
     justify-content: center;
-    color: var(--text-muted);
-    font-size: 14px;
+    gap: 6px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
   }
-  .pad.add:hover { color: var(--accent); }
-  .pad.add .plus { font-size: 24px; line-height: 1; }
+  .pad.add::after { display: none; }
+  .pad.add:hover { color: var(--text); border-color: var(--muted); transform: none; }
+  .pad.add:active { transform: translateY(2px); }
+  .pad.add .plus { font-size: 30px; line-height: 1; }
+
+  /* ---------- Misc ---------- */
   .hint {
     margin-top: 20px;
-    font-size: 12px;
-    color: var(--text-muted);
-    line-height: 1.6;
+    padding: 0 4px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    line-height: 1.7;
+    letter-spacing: 0.3px;
   }
   kbd {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: #0c0d10;
+    border: 1px solid #34373f;
+    border-bottom-width: 2px;
     border-radius: 4px;
-    padding: 1px 5px;
-    font-family: inherit;
-    font-size: 11px;
+    padding: 0 5px;
+    font-family: var(--mono);
+    font-size: 10px;
   }
-  .drop-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(37, 99, 235, 0.12);
-    border: 3px dashed var(--accent);
-    border-radius: 12px;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--accent);
-    pointer-events: none;
-    z-index: 10;
-  }
-  .drop-overlay.visible { display: flex; }
   .banner {
-    background: var(--surface);
+    background: var(--panel);
     border: 1px solid var(--warn);
     border-radius: 10px;
     padding: 12px 16px;
@@ -218,19 +336,51 @@
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
+    box-shadow: 0 0 14px rgba(255, 176, 32, 0.15);
   }
   .banner.visible { display: flex; }
+  .drop-overlay {
+    position: fixed;
+    inset: 14px;
+    background: rgba(62, 199, 255, 0.07);
+    border: 3px dashed #3ec7ff;
+    border-radius: 20px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 16px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #3ec7ff;
+    text-shadow: 0 0 12px rgba(62, 199, 255, 0.6);
+    pointer-events: none;
+    z-index: 10;
+  }
+  .drop-overlay.visible { display: flex; }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>Soundboard</h1>
-  <div class="controls">
+<div class="chassis">
+  <div class="screw tl"></div><div class="screw tr"></div>
+  <div class="screw bl"></div><div class="screw br"></div>
+
+  <div class="brand">
+    <h1>SOUNDBOARD</h1>
+    <span class="mk">MK-I</span>
     <div class="status" id="status">
       <span class="dot" id="statusDot"></span>
       <span id="statusText">Inizializzazione…</span>
     </div>
+  </div>
+
+  <div class="banner" id="permBanner">
+    <span>Per selezionare BlackHole come uscita serve un permesso una-tantum.</span>
+    <button id="permBtn">Abilita</button>
+  </div>
+
+  <div class="console">
     <div class="control-group">
       <label for="outputSelect">Uscita riunione</label>
       <select id="outputSelect"></select>
@@ -240,29 +390,29 @@
       <input type="range" id="meetVolume" min="0" max="1" step="0.05" value="0.8">
     </div>
     <div class="control-group">
-      <label for="monitorToggle">Ascolta anche tu</label>
-      <input type="checkbox" id="monitorToggle" checked>
-      <input type="range" id="monitorVolume" min="0" max="1" step="0.05" value="0.5">
+      <label for="monitorToggle">Monitor locale</label>
+      <div class="row">
+        <input type="checkbox" id="monitorToggle" checked>
+        <input type="range" id="monitorVolume" min="0" max="1" step="0.05" value="0.5">
+      </div>
     </div>
-    <button id="testOutput">Test uscita</button>
-    <button class="stop-all" id="stopAll">■ Stop (Esc)</button>
+    <div class="control-group">
+      <label>&nbsp;</label>
+      <button id="testOutput">Test uscita</button>
+    </div>
+    <button class="stop-all" id="stopAll">■ STOP</button>
   </div>
-</header>
 
-<div class="banner" id="permBanner">
-  <span>Per selezionare BlackHole come uscita serve un permesso una-tantum.</span>
-  <button id="permBtn">Abilita</button>
+  <div class="grid" id="grid"></div>
+
+  <p class="hint">
+    Trascina file audio (mp3/wav/ogg) ovunque sulla pagina per aggiungerli.
+    <kbd>1</kbd>–<kbd>9</kbd> riproduce · <kbd>Esc</kbd> ferma tutto · clic sul nome per rinominare.
+    I suoni restano salvati nel browser.
+  </p>
 </div>
 
-<div class="grid" id="grid"></div>
-
-<p class="hint">
-  Trascina file audio (mp3/wav/ogg) in qualsiasi punto della pagina per aggiungerli.
-  Tasti <kbd>1</kbd>–<kbd>9</kbd> per riprodurre, <kbd>Esc</kbd> per fermare tutto.
-  Clic sul nome per rinominare. I suoni restano salvati nel browser.
-</p>
-
-<div class="drop-overlay" id="dropOverlay">Rilascia i file audio qui</div>
+<div class="drop-overlay" id="dropOverlay">Rilascia i file audio</div>
 <input type="file" id="filePicker" accept="audio/*" multiple hidden>
 
 <script>
@@ -273,6 +423,8 @@ let db = null;
 let pads = [];               // {id, name, order, type, buffer}
 let outputDeviceId = '';     // sinkId per la riunione (BlackHole)
 const activeAudios = new Set();
+
+const LED_COLORS = ['#3ec7ff', '#ff9f0a', '#34e07a', '#ff375f', '#bf5af2', '#ffd60a', '#64d2ff', '#ff6482', '#5ee6a8'];
 
 const $ = (id) => document.getElementById(id);
 
@@ -360,7 +512,6 @@ async function requestPermission() {
 async function playPad(pad, padEl) {
   const blob = new Blob([pad.buffer], { type: pad.type || 'audio/mpeg' });
   const url = URL.createObjectURL(blob);
-  const players = [];
 
   const meet = new Audio(url);
   meet.volume = parseFloat($('meetVolume').value);
@@ -374,7 +525,6 @@ async function playPad(pad, padEl) {
   } else if (!outputDeviceId) {
     setStatus(false, 'Nessuna uscita selezionata: il suono NON arriva in riunione');
   }
-  players.push(meet);
 
   // Il monitor locale suona FUORI da Chrome (via server → afplay): se suonasse
   // nel browser, l'echo cancellation di Chrome cancellerebbe il suono in Meet.
@@ -389,7 +539,8 @@ async function playPad(pad, padEl) {
   padEl.classList.add('playing');
 
   const cleanup = () => {
-    players.forEach((p) => { p.pause(); activeAudios.delete(p); });
+    meet.pause();
+    activeAudios.delete(meet);
     padEl.classList.remove('playing');
     progress.style.width = '0%';
     URL.revokeObjectURL(url);
@@ -400,11 +551,9 @@ async function playPad(pad, padEl) {
     if (meet.duration) progress.style.width = `${(meet.currentTime / meet.duration) * 100}%`;
   });
 
-  for (const p of players) {
-    p._cleanup = cleanup;
-    activeAudios.add(p);
-    p.play().catch(cleanup);
-  }
+  meet._cleanup = cleanup;
+  activeAudios.add(meet);
+  meet.play().catch(cleanup);
 }
 
 function beepBlob() {
@@ -500,6 +649,7 @@ function render() {
   pads.forEach((pad, i) => {
     const el = document.createElement('div');
     el.className = 'pad';
+    el.style.setProperty('--led', LED_COLORS[i % LED_COLORS.length]);
     el.innerHTML = `
       <span class="key">${i < 9 ? i + 1 : '·'}</span>
       <span class="name"></span>
@@ -520,7 +670,7 @@ function render() {
 
   const add = document.createElement('div');
   add.className = 'pad add';
-  add.innerHTML = '<span class="plus">+</span><span>Aggiungi suono</span>';
+  add.innerHTML = '<span class="plus">+</span><span>Aggiungi</span>';
   add.addEventListener('click', () => $('filePicker').click());
   grid.appendChild(add);
 }

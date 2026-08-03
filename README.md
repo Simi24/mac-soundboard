@@ -26,7 +26,9 @@ Lo script installa il driver BlackHole (brew), crea il dispositivo aggregato "Mi
 
 In Meet: ⋮ → Impostazioni → Audio → **Microfono → "Mic + Soundboard"**, e cancellazione del rumore spenta (si mangia gli effetti).
 
-Nella soundboard: trascina i tuoi mp3/wav sulla pagina (restano salvati nel browser), hotkey `1`–`9` per riprodurre, `Esc` per fermare tutto, "Test uscita" per verificare il collegamento a BlackHole. Suoni di partenza in `sounds/`.
+Nella soundboard: trascina i tuoi mp3/wav sulla pagina (restano salvati nel browser), hotkey `1`–`9` per riprodurre, `Esc` per fermare tutto, "Test uscita" per verificare il collegamento a BlackHole.
+
+I suoni non sono inclusi nel repo (`sounds/` è in `.gitignore`): portati i tuoi, o scaricali da [myinstants.com](https://www.myinstants.com) — i link diretti hanno la forma `https://www.myinstants.com/media/sounds/<file>.mp3`.
 
 Con Claude Code basta dire **"attiva la soundboard"** / **"disattiva la soundboard"**.
 
@@ -47,5 +49,5 @@ start.sh / stop.sh         # avvio e spegnimento
 setup/setup.sh             # installazione one-shot (idempotente)
 setup/create_aggregate.swift  # crea il dispositivo aggregato via CoreAudio
 skills/soundboard/         # skill Claude (symlinkata in ~/.claude/skills)
-sounds/                    # mp3 di partenza
+sounds/                    # i tuoi mp3 (non versionati)
 ```
