@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soundboard</title>
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --accent: #2563eb;
+    --accent-soft: #dbeafe;
+    --danger: #dc2626;
+    --ok: #16a34a;
+    --warn: #d97706;
+    --shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --border: #334155;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-soft: #1e3a5f;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  h1 { font-size: 20px; font-weight: 600; }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    box-shadow: var(--shadow);
+  }
+  .control-group { display: flex; align-items: center; gap: 8px; }
+  .control-group label { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+  select, input[type="range"] { accent-color: var(--accent); }
+  select {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 13px;
+    max-width: 220px;
+  }
+  input[type="range"] { width: 90px; }
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); flex-shrink: 0; }
+  .dot.ok { background: var(--ok); }
+  button {
+    font-family: inherit;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  button:hover { background: var(--accent-soft); border-color: var(--accent); }
+  button.stop-all { border-color: var(--danger); color: var(--danger); }
+  button.stop-all:hover { background: var(--danger); color: #fff; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .pad {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    min-height: 96px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+    box-shadow: var(--shadow);
+    transition: border-color 0.15s, transform 0.05s;
+    overflow: hidden;
+    user-select: none;
+  }
+  .pad:hover { border-color: var(--accent); }
+  .pad:active { transform: scale(0.98); }
+  .pad.playing { border-color: var(--accent); background: var(--accent-soft); }
+  .pad .key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px; height: 22px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-muted);
+    background: var(--bg);
+  }
+  .pad .name {
+    font-size: 14px;
+    font-weight: 500;
+    word-break: break-word;
+    line-height: 1.3;
+  }
+  .pad .name input {
+    width: 100%;
+    font: inherit;
+    color: inherit;
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 2px 4px;
+  }
+  .pad .delete {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 22px; height: 22px;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1;
+    color: var(--text-muted);
+    border: none;
+    background: transparent;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .pad:hover .delete { opacity: 1; }
+  .pad .delete:hover { color: var(--danger); background: transparent; }
+  .pad .progress {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 3px;
+    background: var(--accent);
+    width: 0%;
+  }
+  .pad.add {
+    border-style: dashed;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  .pad.add:hover { color: var(--accent); }
+  .pad.add .plus { font-size: 24px; line-height: 1; }
+  .hint {
+    margin-top: 20px;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+  kbd {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: inherit;
+    font-size: 11px;
+  }
+  .drop-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(37, 99, 235, 0.12);
+    border: 3px dashed var(--accent);
+    border-radius: 12px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--accent);
+    pointer-events: none;
+    z-index: 10;
+  }
+  .drop-overlay.visible { display: flex; }
+  .banner {
+    background: var(--surface);
+    border: 1px solid var(--warn);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .banner.visible { display: flex; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Soundboard</h1>
+  <div class="controls">
+    <div class="status" id="status">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">Inizializzazione…</span>
+    </div>
+    <div class="control-group">
+      <label for="outputSelect">Uscita riunione</label>
+      <select id="outputSelect"></select>
+    </div>
+    <div class="control-group">
+      <label for="meetVolume">Vol. riunione</label>
+      <input type="range" id="meetVolume" min="0" max="1" step="0.05" value="0.8">
+    </div>
+    <div class="control-group">
+      <label for="monitorToggle">Ascolta anche tu</label>
+      <input type="checkbox" id="monitorToggle" checked>
+      <input type="range" id="monitorVolume" min="0" max="1" step="0.05" value="0.5">
+    </div>
+    <button id="testOutput">Test uscita</button>
+    <button class="stop-all" id="stopAll">■ Stop (Esc)</button>
+  </div>
+</header>
+
+<div class="banner" id="permBanner">
+  <span>Per selezionare BlackHole come uscita serve un permesso una-tantum.</span>
+  <button id="permBtn">Abilita</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<p class="hint">
+  Trascina file audio (mp3/wav/ogg) in qualsiasi punto della pagina per aggiungerli.
+  Tasti <kbd>1</kbd>–<kbd>9</kbd> per riprodurre, <kbd>Esc</kbd> per fermare tutto.
+  Clic sul nome per rinominare. I suoni restano salvati nel browser.
+</p>
+
+<div class="drop-overlay" id="dropOverlay">Rilascia i file audio qui</div>
+<input type="file" id="filePicker" accept="audio/*" multiple hidden>
+
+<script>
+'use strict';
+
+// ---------- Stato ----------
+let db = null;
+let pads = [];               // {id, name, order, type, buffer}
+let outputDeviceId = '';     // sinkId per la riunione (BlackHole)
+const activeAudios = new Set();
+
+const $ = (id) => document.getElementById(id);
+
+// ---------- IndexedDB ----------
+function openDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('soundboard', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('pads', { keyPath: 'id' });
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function idbAll() {
+  return new Promise((resolve, reject) => {
+    const req = db.transaction('pads').objectStore('pads').getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function idbPut(pad) {
+  return new Promise((resolve, reject) => {
+    const req = db.transaction('pads', 'readwrite').objectStore('pads').put(pad);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function idbDelete(id) {
+  return new Promise((resolve, reject) => {
+    const req = db.transaction('pads', 'readwrite').objectStore('pads').delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// ---------- Dispositivi audio ----------
+async function refreshOutputs() {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const outputs = devices.filter((d) => d.kind === 'audiooutput');
+  const hasLabels = outputs.some((d) => d.label);
+
+  const select = $('outputSelect');
+  select.innerHTML = '';
+  for (const d of outputs) {
+    const opt = document.createElement('option');
+    opt.value = d.deviceId;
+    opt.textContent = d.label || `Uscita ${select.length + 1}`;
+    select.appendChild(opt);
+  }
+
+  const blackhole = outputs.find((d) => /blackhole/i.test(d.label));
+  if (blackhole) {
+    outputDeviceId = blackhole.deviceId;
+    select.value = blackhole.deviceId;
+    setStatus(true, 'BlackHole collegato');
+  } else if (hasLabels) {
+    outputDeviceId = select.value || '';
+    setStatus(false, 'BlackHole non trovato: i suoni non arriveranno in riunione');
+  } else {
+    setStatus(false, 'Permesso audio mancante');
+    $('permBanner').classList.add('visible');
+  }
+  return hasLabels;
+}
+
+function setStatus(ok, text) {
+  $('statusDot').className = 'dot' + (ok ? ' ok' : '');
+  $('statusText').textContent = text;
+}
+
+async function requestPermission() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach((t) => t.stop());
+    $('permBanner').classList.remove('visible');
+    await refreshOutputs();
+  } catch {
+    setStatus(false, 'Permesso negato: consenti il microfono per questa pagina');
+  }
+}
+
+// ---------- Riproduzione ----------
+async function playPad(pad, padEl) {
+  const blob = new Blob([pad.buffer], { type: pad.type || 'audio/mpeg' });
+  const url = URL.createObjectURL(blob);
+  const players = [];
+
+  const meet = new Audio(url);
+  meet.volume = parseFloat($('meetVolume').value);
+  if (outputDeviceId && typeof meet.setSinkId === 'function') {
+    try {
+      await meet.setSinkId(outputDeviceId);
+    } catch (err) {
+      console.error('setSinkId fallita:', err.name, err.message);
+      setStatus(false, `Uscita non instradabile (${err.name}): il suono NON arriva in riunione`);
+    }
+  } else if (!outputDeviceId) {
+    setStatus(false, 'Nessuna uscita selezionata: il suono NON arriva in riunione');
+  }
+  players.push(meet);
+
+  // Il monitor locale suona FUORI da Chrome (via server → afplay): se suonasse
+  // nel browser, l'echo cancellation di Chrome cancellerebbe il suono in Meet.
+  if ($('monitorToggle').checked) {
+    fetch(`/monitor?vol=${$('monitorVolume').value}`, {
+      method: 'POST',
+      body: pad.buffer,
+    }).catch(() => {});
+  }
+
+  const progress = padEl.querySelector('.progress');
+  padEl.classList.add('playing');
+
+  const cleanup = () => {
+    players.forEach((p) => { p.pause(); activeAudios.delete(p); });
+    padEl.classList.remove('playing');
+    progress.style.width = '0%';
+    URL.revokeObjectURL(url);
+  };
+
+  meet.addEventListener('ended', cleanup);
+  meet.addEventListener('timeupdate', () => {
+    if (meet.duration) progress.style.width = `${(meet.currentTime / meet.duration) * 100}%`;
+  });
+
+  for (const p of players) {
+    p._cleanup = cleanup;
+    activeAudios.add(p);
+    p.play().catch(cleanup);
+  }
+}
+
+function beepBlob() {
+  const rate = 44100, seconds = 1, samples = rate * seconds;
+  const buf = new ArrayBuffer(44 + samples * 2);
+  const v = new DataView(buf);
+  const writeStr = (off, s) => [...s].forEach((c, i) => v.setUint8(off + i, c.charCodeAt(0)));
+  writeStr(0, 'RIFF'); v.setUint32(4, 36 + samples * 2, true); writeStr(8, 'WAVE');
+  writeStr(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  writeStr(36, 'data'); v.setUint32(40, samples * 2, true);
+  for (let i = 0; i < samples; i++) {
+    const fade = Math.min(1, (samples - i) / 4000, i / 400);
+    v.setInt16(44 + i * 2, Math.sin((2 * Math.PI * 440 * i) / rate) * 12000 * fade, true);
+  }
+  return new Blob([buf], { type: 'audio/wav' });
+}
+
+async function testOutput() {
+  if (!outputDeviceId) {
+    setStatus(false, 'Nessuna uscita selezionata: abilita il permesso audio');
+    return;
+  }
+  const url = URL.createObjectURL(beepBlob());
+  const audio = new Audio(url);
+  audio.addEventListener('ended', () => URL.revokeObjectURL(url));
+  try {
+    await audio.setSinkId(outputDeviceId);
+    await audio.play();
+    setStatus(true, 'Beep di test inviato all\'uscita selezionata');
+  } catch (err) {
+    console.error('Test uscita fallito:', err.name, err.message);
+    setStatus(false, `Test fallito (${err.name}): l'audio non raggiunge l'uscita`);
+  }
+}
+
+function stopAll() {
+  for (const p of [...activeAudios]) (p._cleanup || (() => p.pause()))();
+  activeAudios.clear();
+  fetch('/stop', { method: 'POST' }).catch(() => {});
+}
+
+// ---------- Pad ----------
+async function addFiles(files) {
+  for (const file of files) {
+    if (!file.type.startsWith('audio/')) continue;
+    const pad = {
+      id: crypto.randomUUID(),
+      name: file.name.replace(/\.[^.]+$/, ''),
+      order: pads.length,
+      type: file.type,
+      buffer: await file.arrayBuffer(),
+    };
+    pads.push(pad);
+    await idbPut(pad);
+  }
+  render();
+}
+
+async function deletePad(pad) {
+  pads = pads.filter((p) => p.id !== pad.id);
+  pads.forEach((p, i) => { p.order = i; });
+  await idbDelete(pad.id);
+  await Promise.all(pads.map(idbPut));
+  render();
+}
+
+function startRename(pad, nameEl) {
+  const input = document.createElement('input');
+  input.value = pad.name;
+  nameEl.replaceChildren(input);
+  input.focus();
+  input.select();
+  const commit = async () => {
+    pad.name = input.value.trim() || pad.name;
+    await idbPut(pad);
+    render();
+  };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') input.blur();
+    if (e.key === 'Escape') { input.value = pad.name; input.blur(); }
+    e.stopPropagation();
+  });
+}
+
+// ---------- Render ----------
+function render() {
+  const grid = $('grid');
+  grid.innerHTML = '';
+  pads.sort((a, b) => a.order - b.order);
+
+  pads.forEach((pad, i) => {
+    const el = document.createElement('div');
+    el.className = 'pad';
+    el.innerHTML = `
+      <span class="key">${i < 9 ? i + 1 : '·'}</span>
+      <span class="name"></span>
+      <button class="delete" title="Elimina">✕</button>
+      <div class="progress"></div>
+    `;
+    const nameEl = el.querySelector('.name');
+    nameEl.textContent = pad.name;
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.delete') || e.target.closest('input')) return;
+      if (e.target === nameEl) return;
+      playPad(pad, el);
+    });
+    nameEl.addEventListener('click', () => startRename(pad, nameEl));
+    el.querySelector('.delete').addEventListener('click', () => deletePad(pad));
+    grid.appendChild(el);
+  });
+
+  const add = document.createElement('div');
+  add.className = 'pad add';
+  add.innerHTML = '<span class="plus">+</span><span>Aggiungi suono</span>';
+  add.addEventListener('click', () => $('filePicker').click());
+  grid.appendChild(add);
+}
+
+// ---------- Eventi globali ----------
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'Escape' || e.key === '0') { stopAll(); return; }
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= 9 && pads[n - 1]) {
+    const padEl = $('grid').children[n - 1];
+    playPad(pads[n - 1], padEl);
+  }
+});
+
+let dragCounter = 0;
+document.addEventListener('dragenter', (e) => {
+  e.preventDefault();
+  if (++dragCounter === 1) $('dropOverlay').classList.add('visible');
+});
+document.addEventListener('dragleave', () => {
+  if (--dragCounter === 0) $('dropOverlay').classList.remove('visible');
+});
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dragCounter = 0;
+  $('dropOverlay').classList.remove('visible');
+  addFiles([...e.dataTransfer.files]);
+});
+
+$('filePicker').addEventListener('change', (e) => {
+  addFiles([...e.target.files]);
+  e.target.value = '';
+});
+$('stopAll').addEventListener('click', stopAll);
+$('testOutput').addEventListener('click', testOutput);
+$('permBtn').addEventListener('click', requestPermission);
+$('outputSelect').addEventListener('change', (e) => { outputDeviceId = e.target.value; });
+navigator.mediaDevices.addEventListener('devicechange', refreshOutputs);
+
+// ---------- Init ----------
+(async function init() {
+  db = await openDb();
+  pads = await idbAll();
+  render();
+  const hasLabels = await refreshOutputs();
+  if (!hasLabels) await requestPermission();
+})();
+</script>
+</body>
+</html>
