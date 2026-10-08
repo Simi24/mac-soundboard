@@ -2,3 +2,5 @@
 nohup.out
 __pycache__/
 sounds/
+voicefx/.build/
+voicefx/build/
