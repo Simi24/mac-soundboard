@@ -18,6 +18,7 @@
     --ok: #34e07a;
     --warn: #ffb020;
     --red: #ff3b30;
+    --voice: #bf5af2;
     --mono: ui-monospace, "SF Mono", Menlo, monospace;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -104,6 +105,7 @@
     flex-shrink: 0;
   }
   .dot.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok), inset 0 -1px 1px rgba(0,0,0,.4); }
+  .dot.off { background: #3a3d45; box-shadow: inset 0 -1px 1px rgba(0,0,0,.4); }
 
   .console {
     display: flex;
@@ -189,6 +191,31 @@
     padding: 10px 18px;
   }
   .stop-all:active { box-shadow: 0 1px 0 #570803, 0 0 8px rgba(255,59,48,.3), inset 0 1px 0 rgba(255,255,255,.25); }
+
+  /* ---------- Voice FX ---------- */
+  .voice {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 12px 18px;
+    margin-bottom: 22px;
+    border: 1px solid #06070a;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  .voice-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .power { display: flex; align-items: center; gap: 8px; }
+  .power.on { color: var(--voice); }
+  .voice-hint { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.3px; }
+  .voice-presets { display: flex; flex-wrap: wrap; gap: 8px; }
+  .voice-presets[hidden] { display: none; }
+  .voice-presets .k { color: var(--muted); margin-right: 6px; font-size: 9px; }
+  .voice-presets button.active {
+    color: #fff;
+    border-color: var(--voice);
+    box-shadow: 0 3px 0 #0d0e11, 0 0 12px color-mix(in srgb, var(--voice) 45%, transparent), inset 0 1px 0 rgba(255,255,255,.1);
+  }
 
   /* ---------- Pads ---------- */
   .grid {
@@ -403,11 +430,19 @@
     <button class="stop-all" id="stopAll">■ STOP</button>
   </div>
 
+  <div class="voice">
+    <div class="voice-head">
+      <button class="power" id="voicePower"><span class="dot off" id="voiceDot"></span>Voice FX</button>
+      <span class="voice-hint" id="voiceHint">Checking…</span>
+    </div>
+    <div class="voice-presets" id="voicePresets" hidden></div>
+  </div>
+
   <div class="grid" id="grid"></div>
 
   <p class="hint">
     Drag audio files (mp3/wav/ogg) anywhere on the page to add them.
-    <kbd>1</kbd>–<kbd>9</kbd> plays · <kbd>Esc</kbd> stops everything · click a name to rename.
+    <kbd>1</kbd>–<kbd>9</kbd> plays · <kbd>Esc</kbd> stops everything · <kbd>⇧</kbd>+<kbd>1</kbd>–<kbd>9</kbd> switches voice · click a name to rename.
     Sounds are saved in the browser.
   </p>
 </div>
@@ -640,6 +675,46 @@ function startRename(pad, nameEl) {
   });
 }
 
+// ---------- Voice FX ----------
+// Native helper (voicefx/) driven through server.py. While it is on, the call
+// app must take "BlackHole 2ch" as mic: "Mic + Soundboard" would also carry the raw voice.
+let voice = { running: false, built: true, preset: null, presets: [], error: null };
+
+async function voiceRequest(method, path) {
+  try {
+    const res = await fetch(path, { method });
+    voice = await res.json();
+  } catch {
+    voice = { running: false, built: true, preset: null, presets: [], error: 'Server unreachable' };
+  }
+  renderVoice();
+}
+
+const refreshVoice = () => voiceRequest('GET', '/voice');
+const toggleVoice = () => voiceRequest('POST', voice.running ? '/voice/stop' : '/voice/start');
+const selectVoice = (name) => voiceRequest('POST', `/voice/preset?name=${encodeURIComponent(name)}`);
+
+function renderVoice() {
+  $('voiceDot').className = 'dot' + (voice.running ? ' ok' : ' off');
+  $('voicePower').classList.toggle('on', voice.running);
+  $('voiceHint').textContent =
+    voice.error ? voice.error
+    : voice.running ? 'On · call mic must be "BlackHole 2ch"'
+    : !voice.built ? 'Not built · run voicefx/build.sh'
+    : 'Off · call mic: "Mic + Soundboard"';
+
+  const row = $('voicePresets');
+  row.hidden = !voice.running;
+  row.replaceChildren(...voice.presets.map((name, i) => {
+    const btn = document.createElement('button');
+    btn.className = name === voice.preset ? 'active' : '';
+    btn.innerHTML = `<span class="k">⇧${i + 1}</span>`;
+    btn.append(name);
+    btn.addEventListener('click', () => selectVoice(name));
+    return btn;
+  }));
+}
+
 // ---------- Render ----------
 function render() {
   const grid = $('grid');
@@ -679,6 +754,12 @@ function render() {
 document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
   if (e.key === 'Escape' || e.key === '0') { stopAll(); return; }
+  // e.code, not e.key: Shift+digit gives symbols that differ per keyboard layout.
+  if (e.shiftKey && /^Digit[1-9]$/.test(e.code)) {
+    const name = voice.running && voice.presets[parseInt(e.code.slice(5), 10) - 1];
+    if (name) selectVoice(name);
+    return;
+  }
   const n = parseInt(e.key, 10);
   if (n >= 1 && n <= 9 && pads[n - 1]) {
     const padEl = $('grid').children[n - 1];
@@ -709,6 +790,7 @@ $('filePicker').addEventListener('change', (e) => {
 $('stopAll').addEventListener('click', stopAll);
 $('testOutput').addEventListener('click', testOutput);
 $('permBtn').addEventListener('click', requestPermission);
+$('voicePower').addEventListener('click', toggleVoice);
 $('outputSelect').addEventListener('change', (e) => { outputDeviceId = e.target.value; });
 navigator.mediaDevices.addEventListener('devicechange', refreshOutputs);
 
@@ -717,6 +799,8 @@ navigator.mediaDevices.addEventListener('devicechange', refreshOutputs);
   db = await openDb();
   pads = await idbAll();
   render();
+  refreshVoice();
+  setInterval(refreshVoice, 3000);  // notices a crash or a stop.sh
   const hasLabels = await refreshOutputs();
   if (!hasLabels) await requestPermission();
 })();

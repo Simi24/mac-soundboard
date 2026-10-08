@@ -3,7 +3,7 @@
 set -e
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
-echo "== 1/3 BlackHole driver =="
+echo "== 1/4 BlackHole driver =="
 if ! system_profiler SPAudioDataType 2>/dev/null | grep -q "BlackHole 2ch"; then
   if [ ! -d "/Library/Audio/Plug-Ins/HAL/BlackHole2ch.driver" ]; then
     brew install blackhole-2ch
@@ -19,10 +19,13 @@ if ! system_profiler SPAudioDataType 2>/dev/null | grep -q "BlackHole 2ch"; then
 fi
 echo "BlackHole active ✓"
 
-echo "== 2/3 'Mic + Soundboard' aggregate device =="
+echo "== 2/4 'Mic + Soundboard' aggregate device =="
 swift "$DIR/setup/create_aggregate.swift"
 
-echo "== 3/3 Claude skill =="
+echo "== 3/4 VoiceFX (native voice effects) =="
+"$DIR/voicefx/build.sh"
+
+echo "== 4/4 Claude skill =="
 SKILL_LINK="$HOME/.claude/skills/soundboard"
 if [ ! -e "$SKILL_LINK" ]; then
   mkdir -p "$HOME/.claude/skills"
@@ -34,4 +37,4 @@ fi
 
 echo ""
 echo "Setup complete. Start with: $DIR/start.sh"
-echo "Select 'Mic + Soundboard' as microphone in your call app."
+echo "Select 'Mic + Soundboard' as microphone in your call app ('BlackHole 2ch' while Voice FX is on)."

@@ -10,5 +10,5 @@ fi
 
 sleep 0.5
 open -a "Google Chrome" "http://localhost:$PORT/soundboard.html"
-echo "Soundboard up. Select 'Mic + Soundboard' as microphone in your call app."
+echo "Soundboard up. Call mic: 'Mic + Soundboard' ('BlackHole 2ch' while Voice FX is on)."
 echo "To shut down: $DIR/stop.sh"

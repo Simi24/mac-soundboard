@@ -4,13 +4,18 @@
 The monitor MUST play OUTSIDE Chrome: Chrome's echo cancellation uses the
 audio played by the browser as a reference signal and would cancel the very
 same sounds arriving in Meet through BlackHole.
+
+Voice FX endpoints (/voice*) proxy to the native VoiceFX helper, see voice.py.
 """
 import glob
+import json
 import os
 import subprocess
 import tempfile
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
+
+import voice
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 PORT = 8765
@@ -36,9 +41,30 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_response(code)
         self.end_headers()
 
+    def _respond_json(self, payload: dict) -> None:
+        body = json.dumps(payload).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        if urlparse(self.path).path == "/voice":
+            self._respond_json(voice.status().to_dict())
+        else:
+            super().do_GET()
+
     def do_POST(self):
         url = urlparse(self.path)
-        if url.path == "/monitor":
+        if url.path == "/voice/start":
+            self._respond_json(voice.start().to_dict())
+        elif url.path == "/voice/stop":
+            self._respond_json(voice.stop().to_dict())
+        elif url.path == "/voice/preset":
+            name = parse_qs(url.query).get("name", [""])[0]
+            self._respond_json(voice.select(name).to_dict())
+        elif url.path == "/monitor":
             try:
                 vol = min(max(float(parse_qs(url.query).get("vol", ["0.5"])[0]), 0.0), 1.0)
             except ValueError:
